@@ -1,0 +1,73 @@
+import { createContext, useContext, useEffect, useReducer } from "react";
+import { CLEAR_FILTERS, FILTER_PRODUCTS, LOAD_PRODUCTS, SORT_PRODUCTS, UPDATE_FILTERS, UPDATE_SORT } from "../actions";
+import reducer from '../reducers/filterReducer'
+import { useProductsContext } from "./productsContext";
+
+const initialState = {
+    filtered_products: [],
+    all_products: [],
+    sort: 'price-lowest',
+    filters: {
+        text: '',
+        company: 'all',
+        category: 'all',
+        color: 'all',
+        min_price: 0,
+        max_price: 0,
+        price: 0,
+        shipping: false
+    }
+}
+
+const FitlerContext = createContext();
+
+export const FilterProvider = ({children}) => {
+    const {products} = useProductsContext();
+    const[state, dispatch] = useReducer(reducer, initialState);
+
+    useEffect(() => {
+        dispatch({type: LOAD_PRODUCTS, payload: products})
+    },[products])
+    useEffect(() => {
+        dispatch({type: FILTER_PRODUCTS})
+        dispatch({type: SORT_PRODUCTS})
+    },[products, state.sort, state.filters])
+
+    const updateSort = (e) => {
+        // const name = e.target.name
+        const value = e.target.value
+        // console.log(value);
+        dispatch({type: UPDATE_SORT, payload: value})
+    }
+
+    const udpateFilters = (e) => {
+        let name = e.target.name
+        let value = e.target.value
+        if(name === 'category'){
+            value = e.target.textContent
+        }
+        if(name === 'color'){
+            value = e.target.dataset.color
+        }
+        if(name === 'price'){
+            value = Number(value)
+        }
+        if(name === 'shipping'){
+            value = e.target.checked
+        }
+        console.log(name, value);
+        dispatch({type: UPDATE_FILTERS, payload: {name, value}})
+    }
+    const clearFilters = () => {
+        dispatch({type: CLEAR_FILTERS})
+    }
+    return (
+        <FitlerContext.Provider value={{...state, updateSort, udpateFilters, clearFilters}}>
+            {children}
+        </FitlerContext.Provider>
+    )
+}
+
+export const useFilterContext = () => {
+    return useContext(FitlerContext)
+}
